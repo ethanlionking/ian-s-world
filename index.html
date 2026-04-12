@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的遊戲宇宙 | Game Hub</title>
+    <style>
+        :root {
+            --primary-glow: #00ffcc;
+            --secondary-glow: #ff3333;
+            --bg-dark: #0a0a0c;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Segoe UI', "Microsoft JhengHei", sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* 標題區域 */
+        header {
+            margin-top: 50px;
+            text-align: center;
+        }
+
+        .main-title {
+            font-size: 3.5rem;
+            letter-spacing: 8px;
+            margin: 0;
+            background: linear-gradient(to right, #00ffcc, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(0, 255, 204, 0.3);
+        }
+
+        .user-tag {
+            color: #888;
+            margin-top: 10px;
+            font-size: 1.1rem;
+        }
+
+        /* 遊戲列表容器 */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 40px;
+            padding: 50px;
+            max-width: 1200px;
+            width: 90%;
+        }
+
+        /* 遊戲卡片 */
+        .game-card {
+            background: #16161a;
+            border: 2px solid #333;
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            position: relative;
+            text-decoration: none;
+            color: white;
+        }
+
+        .game-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            border-color: var(--primary-glow);
+            box-shadow: 0 10px 40px rgba(0, 255, 204, 0.2);
+        }
+
+        /* 預覽圖區域 */
+        .game-preview {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(45deg, #222, #333);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            position: relative;
+        }
+
+        /* 遊戲資訊 */
+        .game-info {
+            padding: 20px;
+        }
+
+        .game-name {
+            font-size: 1.5rem;
+            margin: 0;
+            color: #efefef;
+        }
+
+        .game-desc {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+
+        .status-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(0, 255, 204, 0.1);
+            color: var(--primary-glow);
+            border-radius: 50px;
+            font-size: 0.8rem;
+            margin-top: 15px;
+        }
+
+        /* 待開發卡片樣式 */
+        .coming-soon {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .coming-soon:hover {
+            transform: none;
+            border-color: #333;
+            box-shadow: none;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 30px;
+            color: #444;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 class="main-title">GAME HUB</h1>
+        <div class="user-tag">我的 GitHub 遊戲實驗室</div>
+    </header>
+
+    <div class="game-grid">
+        
+        <a href="ultimate-dodge.html" class="game-card">
+            <div class="game-preview" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
+                🏃‍♂️💨
+            </div>
+            <div class="game-info">
+                <h2 class="game-name">終極躲避</h2>
+                <p class="game-desc">緊張刺激的躲避球對決！支援單人挑戰 AI 或是與好友進行本地雙人 PK。</p>
+                <span class="status-tag">已上線 | v1.2</span>
+            </div>
+        </a>
+
+        <div class="game-card coming-soon">
+            <div class="game-preview">
+                ❓
+            </div>
+            <div class="game-info">
+                <h2 class="game-name">新遊戲載入中</h2>
+                <p class="game-desc">下一個充滿創意的專案正在開發中，敬請期待...</p>
+                <span class="status-tag" style="color: #666; background: #222;">開發中</span>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        &copy; 2026 Powered by GitHub Pages & My Creative Spirit
+    </footer>
+
+</body>
+</html>

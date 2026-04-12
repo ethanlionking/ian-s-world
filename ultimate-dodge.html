@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>終極躲避：雙人對決 | Ultimate Dodge PvP</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: 'Segoe UI', "Microsoft JhengHei", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            text-align: center;
+            background: #222;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(255, 50, 50, 0.2);
+            border: 2px solid #333;
+        }
+
+        .game-title {
+            font-size: 3rem;
+            margin: 0;
+            color: #ff3333;
+            text-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+        }
+
+        .subtitle { color: #888; margin-bottom: 20px; }
+
+        #game-screen { display: none; }
+
+        canvas {
+            background: #111;
+            border: 3px solid #444;
+            border-radius: 10px;
+            display: block;
+        }
+
+        #ui-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-family: monospace;
+        }
+
+        .p1-label { color: #33ff33; }
+        .p2-label { color: #ff3333; }
+        .timer-label { color: #ffcc00; }
+
+        .control-hint {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #666;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: transparent;
+            color: #ff3333;
+            border: 2px solid #ff3333;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .start-btn:hover {
+            background: #ff3333;
+            color: #1a1a1a;
+            box-shadow: 0 0 20px #ff3333;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="menu-screen">
+            <h1 class="game-title">終極躲避：雙人對決</h1>
+            <p class="subtitle">P1 逃脫者 vs P2 殺手</p>
+            <button class="start-btn" onclick="initPvP()">進入對戰模式</button>
+            <div class="control-hint">
+                <span>P1 (綠色): W A S D</span>
+                <span>P2 (紅色): ↑ ↓ ← →</span>
+            </div>
+        </div>
+
+        <div id="game-screen">
+            <div id="ui-bar">
+                <span class="p1-label">P1 逃脫中</span>
+                <span class="timer-label">生存時間: <span id="timer">0</span>s</span>
+                <span class="p2-label">P2 追捕中</span>
+            </div>
+            <canvas id="gameCanvas" width="800" height="500"></canvas>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const timerElement = document.getElementById('timer');
+
+    let isPlaying = false;
+    let score = 0;
+    let startTime;
+    let bombs = [];
+    const keys = {};
+
+    // P1: 綠色小人 (逃脫者)
+    const p1 = {
+        x: 600, y: 350,
+        size: 20,
+        speed: 5.5, // 逃脫者稍微快一點
+        color: '#33ff33'
+    };
+
+    // P2: 紅色殺手 (追捕者)
+    const p2 = {
+        x: 100, y: 100,
+        size: 28, // 殺手體型較大
+        speed: 4.8,
+        color: '#ff3333'
+    };
+
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+
+    function initPvP() {
+        document.getElementById('menu-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'block';
+        
+        isPlaying = true;
+        startTime = Date.now();
+        
+        // 炸彈依然存在，對雙方都是威脅！
+        setInterval(() => {
+            if (isPlaying) {
+                bombs.push({
+                    x: Math.random() * canvas.width,
+                    y: -20,
+                    radius: 10,
+                    speed: 3 + Math.random() * 3
+                });
+            }
+        }, 1200);
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    function gameLoop() {
+        if (!isPlaying) return;
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function update() {
+        score = Math.floor((Date.now() - startTime) / 1000);
+        timerElement.innerText = score;
+
+        // P1 控制 (WASD)
+        if (keys['KeyW'] && p1.y > 0) p1.y -= p1.speed;
+        if (keys['KeyS'] && p1.y < canvas.height - p1.size) p1.y += p1.speed;
+        if (keys['KeyA'] && p1.x > 0) p1.x -= p1.speed;
+        if (keys['KeyD'] && p1.x < canvas.width - p1.size) p1.x += p1.speed;
+
+        // P2 控制 (方向鍵)
+        if (keys['ArrowUp'] && p2.y > 0) p2.y -= p2.speed;
+        if (keys['ArrowDown'] && p2.y < canvas.height - p2.size) p2.y += p2.speed;
+        if (keys['ArrowLeft'] && p2.x > 0) p2.x -= p2.speed;
+        if (keys['ArrowRight'] && p2.x < canvas.width - p2.size) p2.x += p2.speed;
+
+        // 炸彈更新與碰撞 (對雙方都有害)
+        bombs.forEach((bomb, index) => {
+            bomb.y += bomb.speed;
+            if (bomb.y > canvas.height) bombs.splice(index, 1);
+
+            if (checkCircleRect(bomb, p1)) gameOver("P2 獲勝！(P1 被炸彈炸死了)");
+            if (checkCircleRect(bomb, p2)) gameOver("P1 獲勝！(殺手居然被炸死了)");
+        });
+
+        // P1 與 P2 碰撞檢測 (殺手抓到小人)
+        if (
+            p1.x < p2.x + p2.size &&
+            p1.x + p1.size > p2.x &&
+            p1.y < p2.y + p2.size &&
+            p1.y + p1.size > p2.y
+        ) {
+            gameOver(`P2 殺手捕獲成功！\nP1 存活了 ${score} 秒`);
+        }
+    }
+
+    function draw() {
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 畫 P1 (小人)
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = p1.color;
+        ctx.fillStyle = p1.color;
+        ctx.fillRect(p1.x, p1.y, p1.size, p1.size);
+
+        // 畫 P2 (殺手)
+        ctx.shadowColor = p2.color;
+        ctx.fillStyle = p2.color;
+        ctx.fillRect(p2.x, p2.y, p2.size, p2.size);
+
+        // 畫炸彈
+        ctx.shadowColor = '#ffaa00';
+        ctx.fillStyle = '#ffaa00';
+        bombs.forEach(bomb => {
+            ctx.beginPath();
+            ctx.arc(bomb.x, bomb.y, bomb.radius, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        
+        ctx.shadowBlur = 0;
+    }
+
+    function checkCircleRect(circle, rect) {
+        const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.size));
+        const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.size));
+        const distance = Math.sqrt((circle.x - closestX) ** 2 + (circle.y - closestY) ** 2);
+        return distance < circle.radius;
+    }
+
+    function gameOver(msg) {
+        isPlaying = false;
+        alert(msg);
+        location.reload();
+    }
+</script>
+</body>
+</html>
