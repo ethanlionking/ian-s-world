@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>貓咪大戰爭：存檔系統版</title>
+    <style>
+        :root { --gold: #ffcc00; --xp: #82ccdd; --epic: #ff00ff; --bg: #1a1a1a; --laser: rgba(255, 251, 0, 0.8); }
+        body { background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; text-align: center; overflow: hidden; }
+        
+        #music-fix-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        #top-bar { background: rgba(0,0,0,0.8); padding: 15px; display: flex; justify-content: space-around; border-bottom: 2px solid var(--gold); backdrop-filter: blur(5px); }
+        .res { font-size: 1.2rem; font-weight: bold; }
+        .screen { display: none; height: calc(100vh - 60px); flex-direction: column; align-items: center; justify-content: center; }
+        .active { display: flex; }
+        
+        #cannon-container { width: 300px; height: 25px; background: #333; border: 2px solid #fff; border-radius: 15px; margin-top: 10px; position: relative; overflow: hidden; }
+        #cannon-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #ff9900, #fffb00); transition: 0.1s; }
+        #cannon-btn { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--gold); border: none; color: black; font-weight: bold; cursor: pointer; display: none; }
+
+        button { padding: 12px 24px; font-size: 1rem; cursor: pointer; border-radius: 10px; border: 2px solid white; background: #333; color: white; transition: 0.2s; }
+        button:hover:not(:disabled) { background: var(--gold); color: black; transform: scale(1.05); }
+        .btn-danger { background: #550000; border-color: #ff3333; margin-top: 50px; font-size: 0.7rem; }
+        
+        .cat-list { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; padding: 20px; overflow-y: auto; max-height: 400px; width: 90%; }
+        .cat-card { background: rgba(34, 34, 34, 0.9); border: 2px solid #444; padding: 15px; border-radius: 12px; width: 140px; position: relative; }
+        .rare-tag { position: absolute; top: 5px; right: 5px; font-size: 0.7rem; padding: 2px 5px; border-radius: 4px; color: #000; font-weight: bold; }
+
+        #canvas-wrap { border: 5px solid #fff; border-radius: 15px; overflow: hidden; background: #000; }
+        canvas { background-size: cover; background-position: center; transition: background 1s; }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px); }
+            20% { transform: translate(-3px, -2px); }
+            40% { transform: translate(3px, 2px); }
+            60% { transform: translate(-1px, 1px); }
+            100% { transform: translate(0, 0); }
+        }
+        .shaking { animation: shake 0.5s; }
+    </style>
+</head>
+<body>
+
+    <div id="music-fix-layer">
+        <h1 style="color:var(--gold)">🐾 貓咪大戰爭：存檔啟動 🐾</h1>
+        <p>進度將自動儲存於此瀏覽器中</p>
+        <button onclick="unlockAudio()" style="font-size: 1.5rem; padding: 15px 40px; background: var(--gold); border:none; color:black;">載入進度並開始</button>
+    </div>
+
+    <audio id="bgm-home" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
+    <audio id="bgm-battle" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"></audio>
+
+    <div id="top-bar">
+        <div class="res" style="color:var(--gold)">🥫 罐頭: <span id="food-ui">9999</span></div>
+        <div class="res" style="color:var(--xp)">✨ 經驗: <span id="xp-ui">0</span></div>
+        <div class="res" style="color:white">🌍 關卡: <span id="stage-ui">1</span></div>
+    </div>
+
+    <div id="screen-home" class="screen">
+        <h1 style="font-size:3rem; color:var(--gold)">貓咪軍團</h1>
+        <div style="margin-top: 20px;">
+            <button onclick="nav('battle')">⚔️ 進入戰場</button>
+            <button onclick="nav('evolve')">🧬 強化軍團</button>
+            <button onclick="nav('gacha')">🎰 瘋狂轉蛋</button>
+        </div>
+        <button class="btn-danger" onclick="clearSave()">⚠️ 刪除所有存檔 ⚠️</button>
+    </div>
+
+    <div id="screen-gacha" class="screen">
+        <h2>🎰 核心轉蛋</h2>
+        <div id="gacha-display" style="height: 180px; display: flex; align-items: center; justify-content: center;"></div>
+        <button onclick="doGacha()">花費 150 罐頭</button>
+        <button onclick="nav('home')" style="margin-top: 20px;">返回大廳</button>
+    </div>
+
+    <div id="screen-evolve" class="screen">
+        <h2>🧬 軍團基因庫</h2>
+        <div id="my-cats" class="cat-list"></div>
+        <button onclick="nav('home')">返回大廳</button>
+    </div>
+
+    <div id="screen-battle" class="screen">
+        <div style="width: 800px; display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px;">
+            <span style="color:#33ff33">🏰 基地: <span id="p-hp">1000</span></span>
+            <span style="color:#ff3333"><span id="e-hp">1000</span> <span id="enemy-base-icon">⛩️</span></span>
+        </div>
+        <div id="canvas-wrap">
+            <canvas id="warCanvas" width="800" height="300"></canvas>
+        </div>
+        <div id="cannon-container">
+            <div id="cannon-bar"></div>
+            <button id="cannon-btn" onclick="fireCannon()">🔥 發射雷射大砲 🔥</button>
+        </div>
+        <div id="deploy-btns" style="margin-top:10px; display:flex; gap:10px;"></div>
+        <button onclick="stopBattle()" style="margin-top: 15px; background: #555;">撤退</button>
+    </div>
+
+<script>
+    // --- 遊戲初始數值 ---
+    let resources = { food: 9999, xp: 0, stage: 1 };
+    let myCats = []; 
+    let battleUnits = []; let isBattling = false; let battleLoopId; 
+    let deployMoney = 0; let cannonCharge = 0; let laserActive = 0; let souls = [];
+
+    // --- 【存檔核心系統】 ---
+    const SAVE_KEY = "CAT_WAR_SAVE_DATA";
+
+    function saveGame() {
+        const dataToSave = {
+            resources: resources,
+            myCats: myCats
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
+        console.log("遊戲已自動存檔");
+    }
+
+    function loadGame() {
+        const savedData = localStorage.getItem(SAVE_KEY);
+        if (savedData) {
+            const parsedData = JSON.parse(savedData);
+            resources = parsedData.resources;
+            myCats = parsedData.myCats;
+            updateUI();
+            console.log("遊戲讀檔成功！");
+        }
+    }
+
+    function clearSave() {
+        if(confirm("確定要刪除所有進度嗎？這無法還原！")) {
+            localStorage.removeItem(SAVE_KEY);
+            location.reload(); // 重新整理網頁
+        }
+    }
+
+    // --- 遊戲邏輯與 UI (整合之前的靈魂、平衡與大砲) ---
+    const STAGE_THEMES = [
+        { name: "起源草原", bg: "url('https://images.unsplash.com/photo-1500673922987-e212871fec22?w=800')", base: "⛩️" },
+        { name: "幽暗森林", bg: "url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800')", base: "🌲" },
+        { name: "烈日沙漠", bg: "url('https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?w=800')", base: "🌵" }
+    ];
+    const catIcons = ["🐈", "🐈‍⬛", "🦁", "🐯", "🐱"];
+    const enemyIcons = ["👻", "👾", "👽", "🦇", "🐺"];
+
+    const homeMusic = document.getElementById('bgm-home');
+    const battleMusic = document.getElementById('bgm-battle');
+
+    function unlockAudio() {
+        loadGame(); // 點擊按鈕時讀檔
+        homeMusic.play();
+        document.getElementById('music-fix-layer').style.display = 'none';
+        document.getElementById('screen-home').classList.add('active');
+    }
+
+    function nav(target) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-' + target).classList.add('active');
+        if(target === 'battle') { homeMusic.pause(); battleMusic.currentTime = 0; battleMusic.play(); startBattle(); }
+        else { battleMusic.pause(); homeMusic.play(); }
+        if(target === 'evolve') renderEvolveList();
+    }
+
+    function createCatData(id) {
+        const r = Math.random();
+        let rK = r > 0.95 ? "EPIC" : (r > 0.8 ? "RARE" : "EX");
+        const mult = rK === "EPIC" ? 4 : (rK === "RARE" ? 2.5 : 1);
+        const cost = rK === "EPIC" ? 400 : (rK === "RARE" ? 180 : 75);
+        return {
+            id: id, rarityKey: rK, level: 1, color: rK === "EPIC" ? "#ffcc00" : (rK === "RARE" ? "#00ccff" : "#fff"),
+            hp: 180 * mult, atk: 45 * mult, range: id % 2 === 0 ? 250 : 50,
+            speed: 1.2, icon: catIcons[id % catIcons.length], cost: cost
+        };
+    }
+
+    function doGacha() {
+        if(resources.food < 150) return;
+        resources.food -= 150;
+        const cat = createCatData(Date.now());
+        myCats.push(cat);
+        document.getElementById('gacha-display').innerHTML = `<div class="cat-card" style="border-color:${cat.color}"><span class="rare-tag" style="background:${cat.color}">${cat.rarityKey}</span><h1 style="font-size:3rem">${cat.icon}</h1></div>`;
+        updateUI();
+        saveGame(); // 抽完自動存檔
+    }
+
+    function renderEvolveList() {
+        document.getElementById('my-cats').innerHTML = myCats.map((cat, idx) => `
+            <div class="cat-card" style="border-color:${cat.color}">
+                <span class="rare-tag" style="background:${cat.color}">${cat.rarityKey}</span>
+                <h1>${cat.icon}</h1><div>Lv.${cat.level}</div>
+                <button onclick="upgradeCat(${idx})" style="font-size:0.7rem; margin-top:5px;">升級 (${cat.level * 300}XP)</button>
+            </div>
+        `).join('');
+    }
+
+    function upgradeCat(idx) {
+        const c = myCats[idx];
+        if(resources.xp >= c.level * 300) {
+            resources.xp -= c.level * 300;
+            c.level++; c.hp *= 1.3; c.atk *= 1.3;
+            updateUI(); renderEvolveList();
+            saveGame(); // 升級完自動存檔
+        }
+    }
+
+    // --- 戰鬥與靈魂系統 ---
+    const canvas = document.getElementById('warCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function startBattle() {
+        if(myCats.length === 0) { nav('home'); return; }
+        isBattling = true; deployMoney = 200; cannonCharge = 0; souls = [];
+        const theme = STAGE_THEMES[(resources.stage - 1) % STAGE_THEMES.length];
+        canvas.style.backgroundImage = theme.bg;
+        document.getElementById('enemy-base-icon').innerText = theme.base;
+        pBase = { hp: 1000 }; eBase = { hp: 600 * Math.pow(1.2, resources.stage-1) };
+        battleUnits = [];
+        document.getElementById('deploy-btns').innerHTML = myCats.slice(-6).map(cat => `<button onclick="spawnUnit(${cat.id})" style="border-color:${cat.color}">${cat.icon}<br><small>$${cat.cost}</small></button>`).join('');
+        battleLoop();
+    }
+
+    function spawnUnit(catId) {
+        const p = myCats.find(c => c.id === catId);
+        if(deployMoney >= p.cost) { deployMoney -= p.cost; battleUnits.push({...p, x: 70, side: 'P', curHp: p.hp}); }
+    }
+
+    function fireCannon() {
+        if(cannonCharge < 100) return;
+        cannonCharge = 0; laserActive = 30;
+        document.getElementById('canvas-wrap').classList.add('shaking');
+        setTimeout(() => document.getElementById('canvas-wrap').classList.remove('shaking'), 500);
+        battleUnits.forEach(u => { if(u.side === 'E') u.curHp -= 800; });
+    }
+
+    function createSoul(x, y, side, rarityKey) {
+        souls.push({ x: x, y: y, icon: "👻", opacity: 1.0, speedY: -0.8, size: rarityKey === 'EPIC' ? 35 : 24 });
+    }
+
+    function battleLoop() {
+        if(!isBattling) return;
+        ctx.clearRect(0,0,800,300); deployMoney += 2.2;
+        if(cannonCharge < 100) { cannonCharge += 0.05; document.getElementById('cannon-bar').style.width = cannonCharge + "%"; document.getElementById('cannon-btn').style.display = 'none'; }
+        else { document.getElementById('cannon-btn').style.display = 'block'; }
+
+        if(Math.random() < 0.01) {
+            const ehp = 70 * resources.stage;
+            battleUnits.push({ x: 730, side: 'E', curHp: ehp, hp: ehp, atk: 10 * resources.stage, range: 45, speed: 0.75, icon: enemyIcons[resources.stage%5] });
+        }
+
+        battleUnits.forEach(u => {
+            let target = (u.side === 'P') ? (730 - u.x < u.range ? eBase : null) : (u.x - 70 < u.range ? pBase : null);
+            if(!target) target = battleUnits.find(o => o.side !== u.side && Math.abs(o.x - u.x) < u.range);
+            if(target) { if(target.curHp !== undefined) target.curHp -= u.atk/60; else target.hp -= u.atk/60; }
+            else u.x += (u.side === 'P' ? u.speed : -u.speed);
+
+            ctx.font = u.rarityKey === 'EPIC' ? "38px Arial" : "30px Arial";
+            if(u.rarityKey === 'EPIC') { ctx.shadowBlur = 8; ctx.shadowColor = "gold"; }
+            ctx.fillText(u.icon, u.x - 15, 280); ctx.shadowBlur = 0;
+            ctx.fillStyle = "red"; ctx.fillRect(u.x-15, 235, 30, 4);
+            ctx.fillStyle = "#00ff00"; ctx.fillRect(u.x-15, 235, (u.curHp/u.hp)*30, 4);
+        });
+
+        battleUnits.filter(u => u.curHp <= 0).forEach(u => createSoul(u.x, 260, u.side, u.rarityKey));
+        battleUnits = battleUnits.filter(u => u.curHp > 0);
+
+        souls.forEach(s => { s.y += s.speedY; s.opacity -= 0.01; ctx.save(); ctx.globalAlpha = Math.max(0, s.opacity); ctx.font = s.size + "px Arial"; ctx.fillText(s.icon, s.x - (s.size/2), s.y); ctx.restore(); });
+        souls = souls.filter(s => s.opacity > 0);
+
+        ctx.font = "60px Arial"; ctx.fillText("🏰", 10, 280); ctx.fillText(document.getElementById('enemy-base-icon').innerText, 730, 280);
+        if(laserActive > 0) { ctx.fillStyle = `rgba(255, 251, 0, ${laserActive/30})`; ctx.fillRect(70, 240, 660, 40); laserActive--; }
+
+        document.getElementById('p-hp').innerText = Math.max(0, Math.floor(pBase.hp));
+        document.getElementById('e-hp').innerText = Math.max(0, Math.floor(eBase.hp));
+
+        if(eBase.hp <= 0) { alert("勝利！"); resources.stage++; resources.xp += 2000; saveGame(); stopBattle(); }
+        else if(pBase.hp <= 0) { stopBattle(); }
+        else battleLoopId = requestAnimationFrame(battleLoop);
+    }
+
+    function stopBattle() { isBattling = false; cancelAnimationFrame(battleLoopId); updateUI(); nav('home'); }
+    function updateUI() {
+        document.getElementById('food-ui').innerText = resources.food;
+        document.getElementById('xp-ui').innerText = resources.xp;
+        document.getElementById('stage-ui').innerText = resources.stage;
+    }
+</script>
+</body>
+</html>
