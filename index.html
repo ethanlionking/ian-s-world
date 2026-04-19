@@ -7,7 +7,7 @@
     <style>
         :root {
             --primary-glow: #00ffcc;
-            --secondary-glow: #ff3333;
+            --secondary-glow: #ffcc00; /* 貓咪金 */
             --bg-dark: #0a0a0c;
         }
 
@@ -73,6 +73,12 @@
             box-shadow: 0 10px 40px rgba(0, 255, 204, 0.2);
         }
 
+        /* 貓咪大戰爭專屬 hover 顏色 */
+        .cat-war-card:hover {
+            border-color: var(--secondary-glow);
+            box-shadow: 0 10px 40px rgba(255, 204, 0, 0.2);
+        }
+
         /* 預覽圖區域 */
         .game-preview {
             width: 100%;
@@ -113,16 +119,15 @@
             margin-top: 15px;
         }
 
+        .cat-tag {
+            background: rgba(255, 204, 0, 0.1);
+            color: var(--secondary-glow);
+        }
+
         /* 待開發卡片樣式 */
         .coming-soon {
             opacity: 0.6;
             cursor: default;
-        }
-
-        .coming-soon:hover {
-            transform: none;
-            border-color: #333;
-            box-shadow: none;
         }
 
         footer {
@@ -153,6 +158,17 @@
             </div>
         </a>
 
+        <a href="cat-war.html" class="game-card cat-war-card">
+            <div class="game-preview" style="background: linear-gradient(135deg, #333 0%, #111 100%);">
+                🐾🏰
+            </div>
+            <div class="game-info">
+                <h2 class="game-name">貓咪大戰爭</h2>
+                <p class="game-desc">橫向塔防戰鬥！收集各種貓咪，發射雷射大砲，摧毀敵方堡壘。支援靈魂特效與存檔功能。</p>
+                <span class="status-tag cat-tag">全新上線 | v1.0</span>
+            </div>
+        </a>
+
         <div class="game-card coming-soon">
             <div class="game-preview">
                 ❓
@@ -167,7 +183,7 @@
     </div>
 
     <footer>
-        &copy; 2026 Powered by GitHub Pages & My Creative Spirit
+        &copy; 2026 Powered by GitHub Pages | rosweety0327-crypto
     </footer>
 
 </body>
